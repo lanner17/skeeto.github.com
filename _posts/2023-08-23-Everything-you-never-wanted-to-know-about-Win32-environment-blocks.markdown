@@ -47,17 +47,20 @@ strings:
 
     keyA=a\0keyBB=bb\0keyCCC=ccc\0\0
 
-Each string begins with a character other than `=` and contains at least
-one `=`. In my tests this rule was strictly enforced by Windows, and I
-could not construct an environment block that broke this rule. This list
+Each string ~~begins with a character other than `=` and~~ contains at
+least one `=`. In my tests this rule was strictly enforced by Windows, and
+I could not construct an environment block that broke this rule. This list
 is usually, but not always, sorted. It may contain repeated variables, but
 they're always assigned the same value, which is also strictly enforced by
 Windows.
 
-The get/free interface has no "set" function, and a process cannot set its
-own environment block to a custom buffer. There *is* one interface where a
-process gets to provide a raw environment block: [CreateProcess][cp]. That
-is, a parent can construct one for its children.
+~~The get/free interface has no "set" function, and a process cannot set
+its own environment block to a custom buffer.~~ (Update: Stefan Kanthak
+points out [SetEnvironmentStringsW][sesw]. I missed it because it was only
+officially documented a few months before this article was written.) There
+*is* one interface where a process gets to provide a raw environment
+block: [CreateProcess][cp]. That is, a parent can construct one for its
+children.
 
 ```c
     wchar_t env[] = L"HOME=C:\\Users\\me\0PATH=C:\\bin;C:\\Windows\0";
@@ -66,8 +69,8 @@ is, a parent can construct one for its children.
 
 Windows imposes some rules upon this environment block:
 
-* If an element begins with `=` or does not contain `=`, CreateProcess
-  fails.
+* ~~If an element begins with `=` or does not contain `=`, CreateProcess
+  fails.~~
 
 * Repeated variables are modified to match the first instance. If you're
   potentially overriding using a duplicate, put the override first.
@@ -118,8 +121,9 @@ even outside the special case being discussed. GetEnvironmentVariable
 works fine on an unsorted environment block. SetEnvironmentVariable
 maintains sorting, but given an unsorted block it goes somewhere in the
 middle, probably wherever a bisection happens to land. Perhaps look-ups in
-sorted blocks are faster, but environment blocks are so small — a maximum
-of 32K characters — that, in practice, it really does not matter.
+sorted blocks are faster, but environment blocks are so small — ~~a
+maximum of 32K characters~~ (Update: only true for ANSI) — that, in
+practice, it really does not matter.
 
 Suppose you're meticulous and want to sort your environment block before
 spawning a process. How do you go about it? There's the rub: The official
@@ -227,16 +231,21 @@ In summary:
 * Repeat variables are forced to the value of the first instance
 * Variables may contain ill-formed UTF-16
 * Empty environment blocks have a superfluous special case
-* Entries cannot begin with `=`
+* ~~Entries cannot begin with `=`~~
 * Entries must contain at least one `=`
 * Sort order is ambiguous, so you cannot reliably do it yourself
 * Case-insensitivity of names is ambiguous, so rely on get/set
 * `CREATE_UNICODE_ENVIRONMENT` necessary only for non-null environment
 
+**Update September 2024**: Correction from Kasper Brandt [regarding
+variables beginning with `=`][eq]. I misunderstood how it was parsed and
+came to the wrong conclusion.
+
 
 [cp]: https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessw
 [doty]: https://lists.sr.ht/~skeeto/public-inbox/%3Cc2a4c4d7-95cc-48a4-8047-c79b55eba261%40app.fastmail.com%3E
 [env]: https://learn.microsoft.com/en-us/windows/win32/procthread/changing-environment-variables
+[eq]: https://lists.sr.ht/~skeeto/public-inbox/%3C098b0421-af0e-46fb-8921-2a4e76f5a361@app.fastmail.com%3E
 [experiment]: https://github.com/skeeto/scratch/blob/master/misc/envsort.c
 [feb]: https://web.archive.org/web/20180110151515/http://msdn.microsoft.com/en-us/library/ms682425(VS.85).aspx
 [fold]: https://www.unicode.org/Public/15.0.0/ucd/CaseFolding.txt
@@ -245,6 +254,7 @@ In summary:
 [laa]: https://learn.microsoft.com/en-us/cpp/build/reference/largeaddressaware-handle-large-addresses
 [peb]: https://www.geoffchappell.com/studies/windows/km/ntoskrnl/inc/api/pebteb/peb/index.htm
 [rtl]: https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/wdm/nf-wdm-rtlcompareunicodestring
+[sesw]: https://learn.microsoft.com/en-us/windows/win32/api/processenv/nf-processenv-setenvironmentstringsw
 [set]: https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-setenvironmentvariable
 [ss]: https://utcc.utoronto.ca/~cks/space/blog/programming/ProgrammingViaSuperstition
 [str]: https://learn.microsoft.com/en-us/windows/win32/api/processenv/nf-processenv-getenvironmentstringsw

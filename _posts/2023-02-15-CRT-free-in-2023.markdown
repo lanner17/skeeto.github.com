@@ -16,10 +16,10 @@ has been covered][why] and the focus will be on the "how". Both the GNU
 and MSVC toolchains will be considered.
 
 I no longer call these "freestanding" programs since that term is, at
-best, inaccurate. In fact, we will be actively avoiding GCC features
-associated with that label. Instead I call these *CRT-free* programs,
-where CRT stands for the *C runtime* the Windows-oriented term for
-*libc*. This term communicates both intent and scope.
+best, [inaccurate][ubuntu]. In fact, we will be actively avoiding GCC
+features associated with that label. Instead I call these *CRT-free*
+programs, where CRT stands for the *C runtime* the Windows-oriented term
+for *libc*. This term communicates both intent and scope.
 
 ### Entry point
 
@@ -49,14 +49,15 @@ int WinMainCRTStartup(void);  // windows subsystem
 ```
 
 The MSVC linker documentation says the entry point uses the `__stdcall`
-calling convention. Ignore this and **do not use `__stdcall` for your
-entry point!** Since entry points take no arguments, there is no practical
-difference from the `__cdecl` calling convention, so it does not actually
-matter. Rather, the goal is to avoid `__stdcall` *function decorations*.
+calling convention. ~~Ignore this and **do not use `__stdcall` for your
+entry point!**~~ Since entry points may take no arguments, there is no
+practical difference from the `__cdecl` calling convention, so it matters
+little. ~~Rather, the goal is to avoid `__stdcall` *function decorations*.
 In particular, the GNU linker `--entry` option does not understand them,
 nor can it find decorated entry points on its own. If you use `__stdcall`,
 then the 32-bit GNU linker will silently (!) choose the beginning of your
-`.text` section as the entry point.
+`.text` section as the entry point.~~ (This bug was fixed in Binutils
+2.42, released January 2024. `__stdcall` entry points now link correctly.)
 
 If you're using C++, then of course you will also need to use `extern "C"`
 so that it's not name-mangled. Otherwise the results are similarly bad.
@@ -368,5 +369,6 @@ Or with MSVC (linker flags in source):
 [clash]: /blog/2017/06/21/
 [cmd]: /blog/2022/02/18/
 [old]: /blog/2016/01/31/
+[ubuntu]: https://github.com/ipxe/ipxe/commit/e8393c372
 [w64]: https://github.com/skeeto/w64devkit
 [why]: /blog/2023/02/11/
